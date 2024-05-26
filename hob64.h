@@ -45,7 +45,7 @@
     #define HOB64_DECL
 #endif /* HOB64_DECL */
 
-#ifdef __cpluspus
+#ifdef __cplusplus
     extern "C" {
 #endif /* __cpluspus */
 
@@ -114,7 +114,7 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
     }
 
     /* Check the encoded string for valid characters */
-    for (int i = 0; i < encodedLength; i++) {
+    for (size_t i = 0; i < encodedLength; i++) {
         /* Base64-encoded strings can use characters 'A' to 'Z', 'a' to 'z', '0' to '0', '+', '/', and '='. Any other */
         /* characters are invalid and could cause undefined behavior while attempting to decode them. */
         char character = encoded[i];
@@ -160,7 +160,7 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
     }
 
     /* Iterate through each (ASCII) character in the encoded string */
-    for (int i = 0, j = 0; i < encodedLength;) {
+    for (size_t i = 0, j = 0; i < encodedLength;) {
         /* Map four of the encoded characters to four sextets (6-bit digits). '=' is padding so it maps to zero. */
         /* Note: '0 & i++' evaluates to integer value zero while incrementing 'i' by one */
         uint32_t sextet1 = (encoded[i] == '=') ? (0 & i++) : (decodeTable[(int)encoded[i++] - 43]);
@@ -191,7 +191,7 @@ char* hob64_encode(const unsigned char* data, size_t dataLength, size_t* encoded
         'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
         's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
     };
-    
+
     /* Quick input sanitation to confirm data was actually provided */
     if (data == NULL || dataLength <= 0) { /* If there is no data to encode */
         HOB64_LOG("Input data was NULL or its length was not positive")
@@ -213,7 +213,7 @@ char* hob64_encode(const unsigned char* data, size_t dataLength, size_t* encoded
 
     /* Iterate through each 6-bit digit (sextet) in the data. Iteration is done in 24-bit steps simply due the */
     /* typical smallest addressable unit of memory (a "byte") being eight bits. */
-    for (int i = 0, j = 0; i < dataLength; i += 3, j += 4) {
+    for (size_t i = 0, j = 0; i < dataLength; i += 3, j += 4) {
         /* Map three of the sextets to three Base64-equivalent octect characters */
         uint32_t octet1 = i + 0 < dataLength ? (unsigned char)data[i + 0] : 0;
         uint32_t octet2 = i + 1 < dataLength ? (unsigned char)data[i + 1] : 0;

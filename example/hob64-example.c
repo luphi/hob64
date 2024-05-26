@@ -32,11 +32,11 @@ int main(int argc, char** argv) {
     /* Display the inputs and outputs of the decode, keeping in mind that the decoded data is not null terminated */
     printf("\n");
     printf("Decoded \"%s\" (%zu) as\n        \"", encoded1, strlen(encoded1));
-    for (int i = 0; i < decodedLength1; i++)
+    for (size_t i = 0; i < decodedLength1; i++)
         printf("%c", (char)decoded1[i]);
     printf("\" (%zu)\n", decodedLength1);
     printf("Decoded \"%s\" (%zu) as\n        \"", encoded2, strlen(encoded2));
-    for (int i = 0; i < decodedLength2; i++)
+    for (size_t i = 0; i < decodedLength2; i++)
         printf("%c", (char)decoded2[i]);
     printf("\" (%zu)\n", decodedLength2);
 
