@@ -1,11 +1,11 @@
 # hob64
 
-*hob64* is a Header-Only Base64 library written in portable ANSI C (C89).
+*hob64* is a Header-Only Base64 library written in portable ANSI C.
 
 
 ## Features
 
-- Portable C99, tested with GCC (Windows and Linux) and MSVC
+- Portable ANSI C (C89), tested with GCC (Windows and Linux) and MSVC
 - Encodes and decodes Base64 strings
 - Checks to-be-decoded strings for validity
 
