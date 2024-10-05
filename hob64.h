@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef HOB64_H
     #define HOB64_H
 
-#include <stddef.h> /* NULL */
+#include <stddef.h> /* NULL, size_t */
 #include <stdlib.h> /* malloc() */
 #include <stdint.h> /* uint32_t */
 
@@ -80,14 +80,7 @@ HOB64_DECL char* hob64_encode(const unsigned char* data, size_t dataLength, size
 /******************/
 /* Implementation */
 
-#ifdef HOB64_DEBUG
-    void hob64_log(const char* message, ...);
-    #define HOB64_LOG(s) hob64_log(s);
-#else
-    #define HOB64_LOG(s)
-#endif
-
-unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* decodedLength) {
+unsigned char* hob64_decode(const char* encoded, const size_t encodedLength, size_t* decodedLength) {
     /* Base64 data is encoded by replacing specific 6-bit digits with an ASCII character with the digit-to-ASCII */
     /* mapping defined in RFC 4648. The table below is the inverse, an ASCII-to-digit mapping where the encoded */
     /* <ASCII character> - 43 is used as the index. For example, bits 111110 (value 62) are encoded as the '+' ASCII */
@@ -101,13 +94,13 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
 
     /* Quick input sanitation to confirm a string was actually provided */
     if (encoded == NULL || encodedLength <= 0) { /* If there is no string to decode */
-        HOB64_LOG("Encoded string was NULL or its length was not positive")
         *decodedLength = 0;
         return NULL;
     }
 
     /* Check the encoded string for valid characters */
-    for (size_t i = 0; i < encodedLength; i++) {
+    size_t i;
+    for (i = 0; i < encodedLength; i++) {
         /* Base64-encoded strings can use characters 'A' to 'Z', 'a' to 'z', '0' to '0', '+', '/', and '='. Any other */
         /* characters are invalid and could cause undefined behavior while attempting to decode them. */
         char character = encoded[i];
@@ -122,7 +115,6 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
             isValid =  1;
 
         if (!isValid) {
-            HOB64_LOG("The encoded string contained at least one invalid character")
             *decodedLength = 0;
             return NULL;
         }
@@ -132,7 +124,6 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
     /* string's length is not a multiple of four, some amount of those 24 bits is missing; the original data cannot */
     /* be reproduced and the decoding algorithm here will end up trying to decode adjacent memory. Cannot continue. */
     if (encodedLength % 4 != 0) { /* If the encoded string is an unusable length */
-        HOB64_LOG("The encoded data length was not a multiple of four")
         *decodedLength = 0;
         return NULL;
     }
@@ -147,13 +138,13 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
 
     unsigned char* decoded = (unsigned char*)malloc((unsigned int)*decodedLength);
     if (decoded == NULL) { /* If memory allocation failed */
-        HOB64_LOG("Failed to allocate memory in which to place decoded data")
         *decodedLength = 0;
         return NULL;
     }
 
     /* Iterate through each (ASCII) character in the encoded string */
-    for (size_t i = 0, j = 0; i < encodedLength;) {
+    size_t j;
+    for (i = 0, j = 0; i < encodedLength && j < *decodedLength;) {
         /* Map four of the encoded characters to four sextets (6-bit digits). '=' is padding so it maps to zero. */
         /* Note: '0 & i++' evaluates to integer value zero while incrementing 'i' by one */
         uint32_t sextet1 = (encoded[i] == '=') ? (0 & i++) : (decodeTable[(int)encoded[i++] - 43]);
@@ -174,7 +165,7 @@ unsigned char* hob64_decode(const char* encoded, size_t encodedLength, size_t* d
     return decoded;
 }
 
-char* hob64_encode(const unsigned char* data, size_t dataLength, size_t* encodedLength) {
+char* hob64_encode(const unsigned char* data, const size_t dataLength, size_t* encodedLength) {
     /* Base64 data is encoded by replacing specific 6-bit digits with an ASCII character with the digit-to-ASCII */
     /* mapping defined in RFC 4648. The table below maps those values with the ASCII charcters that replace them. For */
     /* example, bits 000011 (value 3) are encoded as the 'D' ASCII cahrcter. Using this table, 'encodeTable[3]' will */
@@ -187,7 +178,6 @@ char* hob64_encode(const unsigned char* data, size_t dataLength, size_t* encoded
 
     /* Quick input sanitation to confirm data was actually provided */
     if (data == NULL || dataLength <= 0) { /* If there is no data to encode */
-        HOB64_LOG("Input data was NULL or its length was not positive")
         *encodedLength = 0;
         return NULL;
     }
@@ -199,14 +189,14 @@ char* hob64_encode(const unsigned char* data, size_t dataLength, size_t* encoded
 
     char* encoded = (char*)malloc(*encodedLength + 1); /* + 1 for the null terminator */
     if (encoded == NULL) {
-        HOB64_LOG("Failed to allocate memory in which to place an encoded string")
         *encodedLength = 0;
         return NULL;
     }
 
     /* Iterate through each 6-bit digit (sextet) in the data. Iteration is done in 24-bit steps simply due the */
     /* typical smallest addressable unit of memory (a "byte") being eight bits. */
-    for (size_t i = 0, j = 0; i < dataLength; i += 3, j += 4) {
+    size_t i, j;
+    for (i = 0, j = 0; i < dataLength && j < *encodedLength + 1; i += 3, j += 4) {
         /* Map three of the sextets to three Base64-equivalent octect characters */
         uint32_t octet1 = i + 0 < dataLength ? (unsigned char)data[i + 0] : 0;
         uint32_t octet2 = i + 1 < dataLength ? (unsigned char)data[i + 1] : 0;
@@ -225,11 +215,5 @@ char* hob64_encode(const unsigned char* data, size_t dataLength, size_t* encoded
 
     return encoded;
 }
-
-#ifdef HOB64_DEBUG
-    void hob64_log(const char* message) {
-        printf("[hob64] %s\n", buffer);
-    }
-#endif /* HOB64_DEBUG */
 
 #endif /* HOB64_IMPLEMENTATION */

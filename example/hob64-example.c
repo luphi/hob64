@@ -1,4 +1,5 @@
-#include <stdio.h> /* printf() */
+#include <stddef.h> /* size_t */
+#include <stdio.h>  /* printf() */
 #include <stdlib.h> /* EXIT_SUCCESS, free() */
 #include <string.h> /* strlen() */
 
@@ -18,10 +19,10 @@ int main(int argc, char** argv) {
 
     /* Display the inputs and outputs of the encode */
     printf("\n");
-    printf("Encoded \"%s\" (%zu) as\n        \"%s\" (%zu)\n", unencodedData1, strlen(unencodedData1), encoded1,
-        strlen(encoded1));
-    printf("Encoded \"%s\" (%zu) as\n        \"%s\" (%zu)\n", unencodedData2, strlen(unencodedData2), encoded2,
-        strlen(encoded2));
+    printf("Encoded \"%s\" (%lu) as\n        \"%s\" (%lu)\n", unencodedData1, (unsigned long)strlen(unencodedData1),
+        encoded1, (unsigned long)strlen(encoded1));
+    printf("Encoded \"%s\" (%lu) as\n        \"%s\" (%lu)\n", unencodedData2, (unsigned long)strlen(unencodedData2),
+        encoded2, (unsigned long)strlen(encoded2));
 
     /* Decode the Base64 strings. The returned arrays will be bit-exact copies of the input strings with the third, */
     /* output parameter being the length of those arrays, in bytes. */
@@ -31,14 +32,15 @@ int main(int argc, char** argv) {
 
     /* Display the inputs and outputs of the decode, keeping in mind that the decoded data is not null terminated */
     printf("\n");
-    printf("Decoded \"%s\" (%zu) as\n        \"", encoded1, strlen(encoded1));
-    for (size_t i = 0; i < decodedLength1; i++)
+    printf("Decoded \"%s\" (%lu) as\n        \"", encoded1, (unsigned long)strlen(encoded1));
+    size_t i;
+    for (i = 0; i < decodedLength1; i++)
         printf("%c", (char)decoded1[i]);
-    printf("\" (%zu)\n", decodedLength1);
-    printf("Decoded \"%s\" (%zu) as\n        \"", encoded2, strlen(encoded2));
-    for (size_t i = 0; i < decodedLength2; i++)
+    printf("\" (%lu)\n", (unsigned long)decodedLength1);
+    printf("Decoded \"%s\" (%lu) as\n        \"", encoded2, (unsigned long)strlen(encoded2));
+    for (i = 0; i < decodedLength2; i++)
         printf("%c", (char)decoded2[i]);
-    printf("\" (%zu)\n", decodedLength2);
+    printf("\" (%lu)\n", (unsigned long)decodedLength2);
 
     /* The encode and decode functions allocated memory to hold their results. Free that memory. */
     free(encoded1);
