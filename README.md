@@ -1,6 +1,6 @@
 # hob64
 
-*hob64* is a Header-Only Base64 library written in C99.
+*hob64* is a Header-Only Base64 library written in portable ANSI C (C89).
 
 
 ## Features
