@@ -5,7 +5,7 @@
 
 ## Features
 
-- Portable ANSI C (C89), tested with GCC (Windows and Linux) and MSVC
+- Portable ANSI C (C89), tested with GCC (Windows and Linux), Clang (macOS), and MSVC
 - Encodes and decodes Base64 strings
 - Checks to-be-decoded strings for validity
 
