@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2024-2025 Luke Philipsen
+Copyright (c) 2024 Luke Philipsen
 
 Permission to use, copy, modify, and/or distribute this software for
 any purpose with or without fee is hereby granted.
@@ -91,6 +91,9 @@ unsigned char* hob64_decode(const char* encoded, const size_t encoded_length, si
         27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51
     };
 
+    size_t i, j, length;
+    unsigned char* decoded;
+
     /* Quick input sanitation to confirm a string was actually provided */
     if (encoded == NULL || encoded_length <= 0) { /* If there is no string to decode */
         if (decoded_length != NULL)
@@ -99,19 +102,21 @@ unsigned char* hob64_decode(const char* encoded, const size_t encoded_length, si
     }
 
     /* Check the encoded string for valid characters */
-    size_t i;
     for (i = 0; i < encoded_length; i++) {
+        char c;
+        int is_valid;
+        
         /* Base64-encoded strings can use characters 'A' to 'Z', 'a' to 'z', '0' to '0', '+', '/', and '='. Any other */
         /* characters are invalid and could cause undefined behavior while attempting to decode them. */
-        char character = encoded[i];
-        int is_valid =  0;
-        if (character >= 'A' && character <= 'Z')
+        c = encoded[i];
+        is_valid =  0;
+        if (c >= 'A' && c <= 'Z')
             is_valid = 1;
-        else if (character >= 'a' && character <= 'z')
+        else if (c >= 'a' && c <= 'z')
             is_valid = 1;
-        else if (character >= '0' && character <= '9')
+        else if (c >= '0' && c <= '9')
             is_valid = 1;
-        else if (character == '+' || character == '/' || character == '=')
+        else if (c == '+' || c == '/' || c == '=')
             is_valid =  1;
 
         if (!is_valid) {
@@ -132,14 +137,13 @@ unsigned char* hob64_decode(const char* encoded, const size_t encoded_length, si
 
     /* Calculate the length of the decoded data. This is mostly straightforward as each character of the input maps */
     /* to six bits with the exception of '=' (padding, not decoded). In other words, 32 bits input = 24 bits output. */
-    size_t length = encoded_length / 4 * 3; /* Decoded length = 3/4 encoded length because 24/32 = 3/4 */
     length = encoded_length / 4 * 3; /* Decoded length = 3/4 encoded length because 24/32 = 3/4 */
     if (encoded[encoded_length - 1] == '=')
         length -= 1; /* Subtract eight bits (assumed to be a byte) because '=' is padding, not data */
     if (encoded[encoded_length - 2] == '=')
         length -= 1;
 
-    unsigned char* decoded = (unsigned char*)malloc(length);
+    decoded = (unsigned char*)malloc(length);
     if (decoded == NULL) { /* If memory allocation failed */
         if (decoded_length != NULL)
             *decoded_length = 0;
@@ -147,16 +151,17 @@ unsigned char* hob64_decode(const char* encoded, const size_t encoded_length, si
     }
 
     /* Iterate through each (ASCII) character in the encoded string */
-    size_t j;
     for (i = 0, j = 0; i < encoded_length && j < length;) {
+        unsigned int sextet1, sextet2, sextet3, sextet4, concatenated;
+
         /* Map four of the encoded characters to four sextets (6-bit digits). '=' is padding so it maps to zero. */
         /* Note: '0 & i++' evaluates to integer value zero while incrementing 'i' by one */
-        unsigned sextet1 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
-        unsigned sextet2 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
-        unsigned sextet3 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
-        unsigned sextet4 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
+        sextet1 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
+        sextet2 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
+        sextet3 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
+        sextet4 = (encoded[i] == '=') ? (0 & i++) : (decode_table[(int)encoded[i++] - 43]);
         /* Concatenate the four sextets and store them. Although the variable is 32 bits, only 24 will be used. */
-        unsigned concatenated = (sextet1 << 18) + (sextet2 << 12) + (sextet3 << 6) + (sextet4 << 0);
+        concatenated = (sextet1 << 18) + (sextet2 << 12) + (sextet3 << 6) + (sextet4 << 0);
         /* Copy the three octets (three 8-bit digits, 24 bits total) of the concatenated integer to the output buffer */
         if (j < length)
             decoded[j++] = (concatenated >> 16) & 0xFF;
@@ -182,6 +187,9 @@ char* hob64_encode(const unsigned char* data, const size_t data_length, size_t* 
         's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'
     };
 
+    size_t i, j, length;
+    char* encoded;
+
     /* Quick input sanitation to confirm data was actually provided */
     if (data == NULL || data_length <= 0) { /* If there is no data to encode */
         if (encoded_length != NULL)
@@ -192,9 +200,9 @@ char* hob64_encode(const unsigned char* data, const size_t data_length, size_t* 
     /* Calculate the length of the encoded data. Each six bits of input correspond to eight bits of output. In other */
     /* words, 24 bits input = 32 bits output. */
     /* Note: The + 2 is an integer division trick that leads to rounding up to the nearest multiple of three */
-    size_t length = 4 * ((data_length + 2) / 3); /* Encoded length = 4/3 decoded length because 32/24 = 4/3 */
+    length = 4 * ((data_length + 2) / 3); /* Encoded length = 4/3 decoded length because 32/24 = 4/3 */
 
-    char* encoded = (char*)malloc(length + 1); /* + 1 for the null terminator */
+    encoded = (char*)malloc(length + 1); /* + 1 for the null terminator */
     if (encoded == NULL) {
         if (encoded_length != NULL)
             *encoded_length = 0;
@@ -203,14 +211,15 @@ char* hob64_encode(const unsigned char* data, const size_t data_length, size_t* 
 
     /* Iterate through each 6-bit digit (sextet) in the data. Iteration is done in 24-bit steps simply due the */
     /* typical smallest addressable unit of memory (a "byte") being eight bits. */
-    size_t i, j;
     for (i = 0, j = 0; i < data_length && j < length + 1; i += 3, j += 4) {
+        unsigned int octet1, octet2, octet3, concatenated;
+
         /* Map three of the sextets to three Base64-equivalent octect characters */
-        unsigned octet1 = i + 0 < data_length ? (unsigned char)data[i + 0] : 0;
-        unsigned octet2 = i + 1 < data_length ? (unsigned char)data[i + 1] : 0;
-        unsigned octet3 = i + 2 < data_length ? (unsigned char)data[i + 2] : 0;
+        octet1 = i + 0 < data_length ? (unsigned char)data[i + 0] : 0;
+        octet2 = i + 1 < data_length ? (unsigned char)data[i + 1] : 0;
+        octet3 = i + 2 < data_length ? (unsigned char)data[i + 2] : 0;
         /* Concatenate the three characters and store them. Although the variable is 32 bits, only 24 will be used. */
-        unsigned concatenated = (octet1 << 16) + (octet2 << 8) + (octet3 << 0);
+        concatenated = (octet1 << 16) + (octet2 << 8) + (octet3 << 0);
 
         encoded[j + 0] = encode_table[(concatenated >> 18) & 0x3F];
         encoded[j + 1] = encode_table[(concatenated >> 12) & 0x3F];
